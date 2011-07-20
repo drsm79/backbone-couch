@@ -205,6 +205,11 @@
         },
         error: _error
       };
+      if (collection.options) {
+        for (i in collection.options){
+          options[i] = collection.options[i];
+        }
+      }
       if (collection.limit) { options.limit = collection.limit; }
       db.view(query, options);
 
