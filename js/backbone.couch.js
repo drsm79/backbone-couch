@@ -103,6 +103,7 @@
         data = model.toJSON();
       if ( !data.type ) { data.type = this.getType( model ); }
       if ( !data.id && data._id ) { data.id = data._id; }
+
       db.saveDoc( data, {
         success: function( respone ){
           _success( {
@@ -209,7 +210,6 @@
         },
         error: _error
       };
-
       if (collection.options) {
         for (i in collection.options){
           if (i !='success'){
@@ -217,18 +217,19 @@
           }
         }
       }
-
-      // limit property of the colletion should override limit in options
       if (collection.limit) { options.limit = collection.limit; }
 
       db.view(query, options);
 
-      var model = new collection.model;
+      // MW I see what this is trying to do but I don't see why it would ever work...
+      /*var model = new collection.model;
       if (! model.url ) {
         throw new Error( "No 'url' property on collection.model!" );
       }
 
       var type = this.getType(new collection.model);
+      */
+      var type = collection.url;
       if ( !this._watchList[ type ] ) {
         this._watchList[ type ] = collection;
       }
@@ -279,25 +280,29 @@
 
               if ( docHandlerDefined && ( id != currentDdoc)) {
                 that.docChangeHandler(id);
-              } else if ( doc.type ) {
-                var collection = that._watchList[ doc.type ];
-                if ( collection ) {
-                  var model = collection.get( id );
-                  if ( model ) {
-                    if ( model && doc._rev != model.get( "_rev" ) ) {
-                      model.set(doc);
+              } else {
+                _.each(that._watchList, function(collection) {
+                  if ( collection ) {
+                    var model = collection.get( id );
+                    if ( model ) {
+                      if ( model && doc._rev != model.get( "_rev" ) ) {
+                        model.set(doc);
+                      }
+                    } else {
+                      if ( !doc.id ) { doc.id = doc._id; }
+                      if (collection.handle_change) {
+                        collection.handle_change(doc);
+                      }
                     }
-                  } else {
-                    if ( !doc.id ) { doc.id = doc._id; }
-                    collection.add(doc);
                   }
-                }
+                });
               }
             })
           });
         },
         error: function () {
           that.log("problem with db connection");
+          Backbone.couch.startingChanges = false;
         }
       })
     },
@@ -358,7 +363,8 @@
      */
     runChangesFeed: function() {
       // run changes changes feed handler
-      if( Backbone.couch.enableChangesFeed && !Backbone.couch.changesFeed ) {
+      if( Backbone.couch.enableChangesFeed && !Backbone.couch.changesFeed && !Backbone.couch.startingChanges) {
+        Backbone.couch.startingChanges = true;
         Backbone.couch._changes();
       }
     }
@@ -374,7 +380,6 @@
    * @param {function} error callback
    */
   Backbone.sync = function(method, obj, success, error) {
-
     if ( method === "create" || method === "update" ) {
       // triggered on "model.save(...)"
       Backbone.couch.create( obj, success, error );
