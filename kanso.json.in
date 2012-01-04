@@ -13,7 +13,7 @@
   ],
   "url": "https://github.com/andrzejsliwa/backbone-couch",
   "modules": [
-    "backbone.couch.js"
+    "backbone-couch.js"
   ],
   "modules_attachment": false,
   "dependencies": {
