@@ -204,6 +204,46 @@
     },
 
     /**
+     * fetch collection from a couchdb _external
+     *
+     * @param {Backbone.Collection} collection
+     * @param {function} _success callback
+     * @param {function} _error callback
+     */
+    fetchExternal: function( collection, _success, _error) {
+      this.log( "fetchExternal" );
+      var db = this.db();
+      
+      // collections can define their own success/error functions. Success
+      // functions return a list of models to pass to the call back or use
+      // the default function which assumes the value is the model.
+      var options = {
+        success: function( result ){
+          _success( (collection.success || function( result ) {
+            var models = [];
+            // for each result row, build model
+            // compliant with backbone
+            _.each( result.rows, function( row ) {
+              var model = row.value;
+              if ( !model.id ) { model.id = row.id; }
+              models.push( model );
+            });
+            // if no result then should result null
+            if ( models.length == 0 ) { models = null; }
+            return models;
+          })( result ));
+        },
+        error: collection.error || _error
+      };
+      
+      db.external(external, options);
+      
+      var type = this.getType( collection );
+      if ( !this._watchList[ type ] ) {
+        this._watchList[ type ] = collection;
+      }
+    },
+    /**
      * fetch collection from couchdb
      *
      * @param {Backbone.Collection} collection
@@ -449,7 +489,12 @@
       // depends from where sync is called
       if ( obj.model ) {
         // triggered on "collection.fetch(...)"
-        Backbone.couch.fetchCollection( obj, options.success, options.error );
+        if ( obj.external ) {
+          // if obj has an external member talk to the external
+          Backbone.couch.fetchExternal( obj, options.success, options.error );  
+        } else {
+          Backbone.couch.fetchCollection( obj, options.success, options.error );  
+        }
       } else {
         // triggered on "model.fetch(...)"
         Backbone.couch.fetchModel( obj, options.success, options.error );
