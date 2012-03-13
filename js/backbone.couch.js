@@ -236,7 +236,7 @@
         error: collection.error || _error
       };
       
-      db.external(external, options);
+      db.external(collection.external, collection.query, options);
       
       var type = this.getType( collection );
       if ( !this._watchList[ type ] ) {
