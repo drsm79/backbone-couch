@@ -529,6 +529,18 @@
             options, "An error occurred accessing the view"
           );
         },
+        external: function(external, query, options){
+          var options = options || {};
+          var type = "GET";
+          
+          ajax({
+            type: type,
+            data: query,
+            url: this.uri + external
+          },
+          options, "An error occurred accessing the search"
+          );
+        },
         getDbProperty: function(propName, options, ajaxOptions) {
           ajax({url: this.uri + propName + encodeOptions(options)},
             options,
