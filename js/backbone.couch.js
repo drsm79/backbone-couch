@@ -189,27 +189,28 @@
       // if descending not defined set default false
       collection.descending || ( collection.descending = false );
 
+      // collections can define their own success/error functions. Success
+      // functions return a list of models to pass to the call back or use
+      // the default function which assumes the value is the model.
       var options = {
-        descending: collection.descending,
-        success: function( result ) {
-          var models = [];
-          if (collection.options.success) {
-            models = collection.options.success(result);
-          } else {
+        success: function( result ){
+          _success( (collection.success || function( result ) {
+            var models = [];
             // for each result row, build model
-            // compilant with backbone
+            // compliant with backbone
             _.each( result.rows, function( row ) {
               var model = row.value;
-              if ( !model.id ) { model.id = row.id }
+              if ( !model.id ) { model.id = row.id; }
               models.push( model );
             });
-          };
-          // if no result then should result null
-          if ( models.length == 0 ) { models = null }
-          _success( models );
+            // if no result then should result null
+            if ( models.length == 0 ) { models = null; }
+            return models;
+          })( result ));
         },
-        error: _error
+        error: collection.error || _error
       };
+        
       if (collection.options) {
         for (i in collection.options){
           if (i !='success'){
